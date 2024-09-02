@@ -19,7 +19,7 @@ def generate_description(company_name, api_key):
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=150,
+            max_tokens=4095,
         )
         description = response['choices'][0]['message']['content'].strip()
         return description
