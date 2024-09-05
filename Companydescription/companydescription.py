@@ -10,9 +10,7 @@ def generate_description(company_name, api_key):
     openai.api_key = api_key
     
     system_prompt = f"""
-You are a helpful assistant. Write a 1 paragraph description of the following company: {company_name}. Provide an informative, engaging summary of the company's history, services, and any notable achievements.
-You will find an example in the first user prompt: 'California Bank & Trust (CB&T), established in 1952, has been providing financial services to individuals and businesses across California for nearly 70 years. As a division of Zions Bancorporation, N.A., CB&T manages more than $14 billion in loans and $15 billion in deposits through over 85 branches statewide. Among its diverse financial products, CB&T offers competitive certificates of deposit (CDs) with APY rates that are highly attractive in the current market.'
-"""
+You are a helpful assistant. Write a 1 paragraph description of the following company: {company_name}. Provide an informative, engaging summary of the company's history, services, and any notable achievements. """
 
     try:
         response = openai.ChatCompletion.create(
