@@ -10,7 +10,7 @@ def generate_description(company_name, api_key):
     openai.api_key = api_key
     
     system_prompt = f"""
-You are a helpful assistant. Write a 1 paragraph description of the following company: {company_name}. Provide an informative, engaging summary of the company's history, services, and any notable achievements. """
+Write a 1 paragraph description of the following company: {company_name}. Provide an informative, engaging summary of the company's history, services, and any notable achievements. """
 
     try:
         response = openai.ChatCompletion.create(
