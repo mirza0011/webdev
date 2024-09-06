@@ -5,11 +5,27 @@ import csv
 from bs4.element import Comment
 import os
 import urllib.parse
+from fake_useragent import UserAgent
+import warnings
+
+# Disable warnings about unverified HTTPS requests
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 # Add your API keys
 RAPIDAPI_KEY = 'f5099b8793msh9396441b8f28f11p122ca6jsn983a85f217d7'
 RAPIDAPI_HOST = 'google-search74.p.rapidapi.com'
 OPENAI_API_KEY = ''
+
+# Proxy settings
+proxies = {
+    "http": "http://flbVSD77PUMdUuZh:FHXcnnZPb9if3N8w@geo.iproyal.com:12321",
+    "https": "http://flbVSD77PUMdUuZh:FHXcnnZPb9if3N8w@geo.iproyal.com:12321",
+}
+
+# Function to generate a fake user agent
+def get_fake_user_agent():
+    ua = UserAgent()
+    return {'User-Agent': ua.random}
 
 # Function to search Google for CD offerings
 def search_google(domain):
@@ -17,9 +33,10 @@ def search_google(domain):
     querystring = {"query": f"site:{domain} share certificates of deposit", "limit": "3"}
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": RAPIDAPI_HOST
+        "x-rapidapi-host": RAPIDAPI_HOST,
     }
-    response = requests.get(url, headers=headers, params=querystring)
+    headers.update(get_fake_user_agent())  # Add fake user agent to headers
+    response = requests.get(url, headers=headers, params=querystring, proxies=proxies, verify=False)
     return response.json().get('results', [])
 
 # Function to determine if an HTML element contains visible text
@@ -32,7 +49,8 @@ def is_visible(element):
 
 # Function to scrape visible text content from a webpage and capture the title
 def scrape_visible_text(url):
-    response = requests.get(url)
+    headers = get_fake_user_agent()  # Use the fake user agent
+    response = requests.get(url, headers=headers, proxies=proxies, verify=False)
     soup = BeautifulSoup(response.content, 'html.parser')
     texts = soup.find_all(string=True)
     visible_texts = filter(is_visible, texts)
@@ -43,14 +61,14 @@ def generate_overview(text, bank_name):
     openai.api_key = OPENAI_API_KEY
 
     system_prompt = f"""
-    You will be given text that describes the CD (Certificate of Deposit) offerings of {bank_name}. Please provide a one-paragraph overview of these offerings as well as the products' pros and cons. Separate the company overview and the pros and cons with a pipe character. Separate the individual pros and cons with pipe characters as well.
+    You will be given text that describes the CD (Certificate of Deposit) offerings of {bank_name}. Please provide a one-paragraph overview of these offerings as well as the products' pros and cons. Separate the company overview and the pros and cons with a tilde (~) character. Separate the individual pros and cons with pipe characters as well.
     The information for {bank_name} is directly below and you will also find three example outputs in the first three user prompts:\n\n{text}"""
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "Landmark Credit Union offers a Certificate of Deposit (CD) program that gives account holders a way to invest their savings and see them grow steadily over time. With terms ranging from 3 months to 5 years, there's flexibility to suit varying financial goals and time frames. The minimum investment amount is just $500, and all CDs from Landmark are federally insured by the NCUA for up to $250,000 per account owner, ensuring that your funds are safe and protected. The dividend rates offered range from 0.50% APY for a 3-month term to 3.83% APY for terms ranging from 18 months to 5 years. | Pros: Higher APY than regular savings account | Terms from 3 months to 5 years for flexibility | Federally insured up to $250,000 by NCUA | Low minimum deposit of $500 | Multiple CD terms yield higher returns | Cons: Penalty may apply for early withdrawal | Requires an upfront deposit of at least $500 | Locked in rate - can't take advantage if rates rise | Funds cannot be added to the CD after the initial deposit | Not suitable for short-term savings"},
-        {"role": "user", "content": "Washington State Employees Credit Union (WSECU) offers Share Certificates also known as \"certificates\" that allow individuals to earn a higher Annual Percentage Yield (APY) than standard savings accounts, with their offering reaching up to 4.60% APY on a 7-month term. These certificates lock in a fixed rate for a future return and are excellent savings mechanisms for individuals seeking to save for significant expenditures or reach particular savings milestones. The value upon maturity can be determined the day the account opens, making it a reliable option for those seeking certainty in their investments. Penalties may apply for early withdrawal. | Pros: Higher yield than most savings accounts | Certainty of return upon maturity | Variety of term lengths | Deposits insured up to $250,000 by the NCUA | Cons: Funds are locked until the maturity date, limiting access | Penalties may apply for early withdrawals | Cannot add funds to existing certificates, but multiple certificates can be opened | Not suitable for long-term goals as the yield may not compare well to long-term yields from the stock market."},
-        {"role": "user", "content": "Connexus Credit Union offers a versatile selection of Certificate of Deposit (CD) options, designed to meet diverse financial goals. Their offerings range from regular CDs to money market CD accounts, with varying maturity terms and competitive rates. The financial institution features online availability and accessibility to make operations smoother and more convenient. | Pros: Competitive interest rates | Various maturity options (from 12 to 60 months) | High Yield CD accounts available | Access to accounts online | Regularly holds rewards programs | Federally insured by NCUA | No monthly service fees | Cons: Requires a minimum balance to open a CD account | Early withdrawal penalties | Lower APY for lower balance tiers | Lack of physical branches for face-to-face assistance | Rewards program not available for all CDs"}
+        {"role": "user", "content": "Landmark Credit Union offers a Certificate of Deposit (CD) program that gives account holders a way to invest their savings and see them grow steadily over time. With terms ranging from 3 months to 5 years, there's flexibility to suit varying financial goals and time frames. The minimum investment amount is just $500, and all CDs from Landmark are federally insured by the NCUA for up to $250,000 per account owner, ensuring that your funds are safe and protected. The dividend rates offered range from 0.50% APY for a 3-month term to 3.83% APY for terms ranging from 18 months to 5 years ~ Higher APY than regular savings account | Terms from 3 months to 5 years for flexibility | Federally insured up to $250,000 by NCUA | Low minimum deposit of $500 | Multiple CD terms yield higher returns ~ Penalty may apply for early withdrawal | Requires an upfront deposit of at least $500 | Locked in rate - can't take advantage if rates rise | Funds cannot be added to the CD after the initial deposit | Not suitable for short-term savings"},
+        {"role": "user", "content": "Washington State Employees Credit Union (WSECU) offers Share Certificates also known as certificates that allow individuals to earn a higher Annual Percentage Yield (APY) than standard savings accounts, with their offering reaching up to 4.60% APY on a 7-month term. These certificates lock in a fixed rate for a future return and are excellent savings mechanisms for individuals seeking to save for significant expenditures or reach particular savings milestones. The value upon maturity can be determined the day the account opens, making it a reliable option for those seeking certainty in their investments. Penalties may apply for early withdrawal.~ Higher yield than most savings accounts | Certainty of return upon maturity | Variety of term lengths | Deposits insured up to $250,000 by the NCUA ~ Funds are locked until the maturity date, limiting access | Penalties may apply for early withdrawals | Cannot add funds to existing certificates, but multiple certificates can be opened | Not suitable for long-term goals as the yield may not compare well to long-term yields from the stock market."},
+        {"role": "user", "content": "Connexus Credit Union offers a versatile selection of Certificate of Deposit (CD) options, designed to meet diverse financial goals. Their offerings range from regular CDs to money market CD accounts, with varying maturity terms and competitive rates. The financial institution features online availability and accessibility to make operations smoother and more convenient. ~ Competitive interest rates | Various maturity options (from 12 to 60 months) | High Yield CD accounts available | Access to accounts online | Regularly holds rewards programs | Federally insured by NCUA | No monthly service fees ~ Requires a minimum balance to open a CD account | Early withdrawal penalties | Lower APY for lower balance tiers | Lack of physical branches for face-to-face assistance | Rewards program not available for all CDs"}
     ]
 
     try:
@@ -69,9 +87,9 @@ def read_domains_from_file(file_path):
     with open(file_path, 'r') as file:
         return [line.strip() for line in file if line.strip()]
 
-# Function to split the overview into paragraph, pros, and cons
+# Function to split the overview, pros, and cons
 def split_overview(overview):
-    parts = overview.split('|', 2)
+    parts = overview.split('~', 2)
     paragraph = parts[0].strip() if parts else ''
     pros = parts[1].strip() if len(parts) > 1 else ''
     cons = parts[2].strip() if len(parts) > 2 else ''
@@ -99,7 +117,7 @@ def main(domain_file, output_file):
                 title = result['title']
                 print(f"Scraping {url}...")
                 visible_text, html_content = scrape_visible_text(url)
-                text_content += visible_text
+                text_content += visible_text + " "
                 urls.append(url)
                 titles.append(title)
 
@@ -116,7 +134,7 @@ def main(domain_file, output_file):
             titles += ['No title'] * (3 - len(titles))
 
             try:
-                overview = generate_overview(text_content, domain)
+                overview = generate_overview(text_content.strip(), domain)
                 paragraph, pros, cons = split_overview(overview)
                 writer.writerow([domain, paragraph, pros, cons, urls[0], urls[1], urls[2], titles[0], titles[1], titles[2]])
             except Exception as e:
