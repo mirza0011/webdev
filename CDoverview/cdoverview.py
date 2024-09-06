@@ -43,9 +43,8 @@ def generate_overview(text, bank_name):
     openai.api_key = OPENAI_API_KEY
 
     system_prompt = f"""
-    Provide a brief one-paragraph overview, followed by a list of pros separated by pipes (`|`),
-    and a list of cons separated by pipes (`|`) for the Certificate of Deposit offerings from
-    {bank_name} based on the following information:\n\n{text}"""
+    You will be given text that describes the CD (Certificate of Deposit) offerings of {bank_name}.  Please provide a one-paragraph overview of these offerings as well as the products' pros and cons. Separate the company overview and the pros and cons with a pipe character.  Separate the individual pros and cons with pipe characters as well.
+    The information for {bank_name} is directly below and you will also find three example outputs in the first three user prompts:\n\n{text}"""
 
     messages = [
         {"role": "system", "content": system_prompt},
