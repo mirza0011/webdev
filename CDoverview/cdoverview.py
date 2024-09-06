@@ -34,12 +34,11 @@ def is_visible(element):
 def scrape_visible_text(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
-    title = soup.title.string if soup.title else "No title"
     texts = soup.find_all(string=True)
     visible_texts = filter(is_visible, texts)
-    return ' '.join(t.strip() for t in visible_texts if t.strip()), response.text, title
+    return ' '.join(t.strip() for t in visible_texts if t.strip()), response.text
 
-# Function to generate an overview and pros/cons using GPT-4
+# Function to generate an overview and pros/cons using GPT-4o-mini
 def generate_overview(text, bank_name):
     openai.api_key = OPENAI_API_KEY
 
@@ -49,9 +48,9 @@ def generate_overview(text, bank_name):
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "Landmark Credit Union offers a Certificate of Deposit (CD) program that gives account holders a way to invest their savings and see them grow steadily over time. With terms ranging from 3 months to 5 years, there's flexibility to suit varying financial goals and time frames. The minimum investment amount is just $500, and all CDs from Landmark are federally insured by the NCUA for up to $250,000 per account owner, ensuring that your funds are safe and protected. The dividend rates offered range from 0.50% APY for a 3-month term to 3.83% APY for terms ranging from 18 months to 5 years. | Pros: Higher APY than regular savings account | Terms from 3 months to 5 years for flexibility | Federally insured up to $250,000 by NCUA | Low minimum deposit of $500 | Multiple CD terms yield higher returns, Cons: Penalty may apply for early withdrawal | Requires an upfront deposit of at least $500 | Locked in rate - can't take advantage if rates rise | Funds cannot be added to the CD after the initial deposit | Not suitable for short term savings"},
-        {"role": "user", "content": "Washington State Employees Credit Union (WSECU) offers Share Certificates also known as \"certificates\" that allow individuals to earn a higher Annual Percentage Yield (APY) than standard savings accounts, with their offering reaching up to 4.60% APY on a 7-month term. These certificates lock in a fixed rate for a future return and are excellent savings mechanisms for individuals seeking to save for significant expenditures or reach particular savings milestones. The value upon maturity can be determined the day the account opens, making it a reliable option for those seeking certainty in their investments. Penalties may apply for early withdrawal. | Pros: Higher yield than most savings accounts | Certainty of return upon maturity | Variety of term lengths | Deposits insured up to $250,000 by the NCUA | Cons: Funds are locked until the maturity date, limiting access | Penalties may apply for early withdrawals | Cannot add funds to existing certificates, but multiple certificates can be opened | Not suitable for long term goals as the yield may not compare well to long-term yields from the stock market."},
-        {"role": "user", "content": "Connexus Credit Union offers a versatile selection of Certificate of Deposit (CD) options, designed to meet diverse financial goals. Their offerings range from regular CDs to money market CD accounts, with varying maturity terms and competitive rates. The financial institution features online availability and accessibility to make operations smoother and more convenient. | Pros: Competitive interest rates | Various maturity options (from 12 to 60 months) | High Yield CD accounts available | Access to accounts online | Regularly holds rewards programs | Federally insured by NCUA | No monthly service fees, Cons: Requires a minimum balance to open a CD account | Early withdrawal penalties | Lower APY for lower balance tiers | Lack of physical branches for face-to-face assistance | Rewards program not available for all CDs"}
+        {"role": "user", "content": "Landmark Credit Union offers a Certificate of Deposit (CD) program that gives account holders a way to invest their savings and see them grow steadily over time. With terms ranging from 3 months to 5 years, there's flexibility to suit varying financial goals and time frames. The minimum investment amount is just $500, and all CDs from Landmark are federally insured by the NCUA for up to $250,000 per account owner, ensuring that your funds are safe and protected. The dividend rates offered range from 0.50% APY for a 3-month term to 3.83% APY for terms ranging from 18 months to 5 years. | Pros: Higher APY than regular savings account | Terms from 3 months to 5 years for flexibility | Federally insured up to $250,000 by NCUA | Low minimum deposit of $500 | Multiple CD terms yield higher returns | Cons: Penalty may apply for early withdrawal | Requires an upfront deposit of at least $500 | Locked in rate - can't take advantage if rates rise | Funds cannot be added to the CD after the initial deposit | Not suitable for short-term savings"},
+        {"role": "user", "content": "Washington State Employees Credit Union (WSECU) offers Share Certificates also known as \"certificates\" that allow individuals to earn a higher Annual Percentage Yield (APY) than standard savings accounts, with their offering reaching up to 4.60% APY on a 7-month term. These certificates lock in a fixed rate for a future return and are excellent savings mechanisms for individuals seeking to save for significant expenditures or reach particular savings milestones. The value upon maturity can be determined the day the account opens, making it a reliable option for those seeking certainty in their investments. Penalties may apply for early withdrawal. | Pros: Higher yield than most savings accounts | Certainty of return upon maturity | Variety of term lengths | Deposits insured up to $250,000 by the NCUA | Cons: Funds are locked until the maturity date, limiting access | Penalties may apply for early withdrawals | Cannot add funds to existing certificates, but multiple certificates can be opened | Not suitable for long-term goals as the yield may not compare well to long-term yields from the stock market."},
+        {"role": "user", "content": "Connexus Credit Union offers a versatile selection of Certificate of Deposit (CD) options, designed to meet diverse financial goals. Their offerings range from regular CDs to money market CD accounts, with varying maturity terms and competitive rates. The financial institution features online availability and accessibility to make operations smoother and more convenient. | Pros: Competitive interest rates | Various maturity options (from 12 to 60 months) | High Yield CD accounts available | Access to accounts online | Regularly holds rewards programs | Federally insured by NCUA | No monthly service fees | Cons: Requires a minimum balance to open a CD account | Early withdrawal penalties | Lower APY for lower balance tiers | Lack of physical branches for face-to-face assistance | Rewards program not available for all CDs"}
     ]
 
     try:
@@ -95,10 +94,11 @@ def main(domain_file, output_file):
             urls = []
             titles = []
 
-            for i, result in enumerate(search_results):
+            for result in search_results:
                 url = result['url']
+                title = result['title']
                 print(f"Scraping {url}...")
-                visible_text, html_content, title = scrape_visible_text(url)
+                visible_text, html_content = scrape_visible_text(url)
                 text_content += visible_text
                 urls.append(url)
                 titles.append(title)
@@ -108,7 +108,7 @@ def main(domain_file, output_file):
                 domain_name = parsed_url.netloc.replace('.', '_')
 
                 # Write the scraped HTML to a file for auditing
-                with open(os.path.join(output_dir, f"{domain_name}_{i + 1}.html"), 'w', encoding='utf-8') as file:
+                with open(os.path.join(output_dir, f"{domain_name}_{len(urls)}.html"), 'w', encoding='utf-8') as file:
                     file.write(html_content)
 
             # Ensure we have 3 URLs even if there were fewer search results
